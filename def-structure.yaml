@@ -181,6 +181,59 @@ components:
       - チャンネルタイプに応じたアイコン表示（Hash/Lock）"""
     dependency: []
 
+  FileUpload/FileUploadComponent.tsx:
+    content: |-
+      """ファイルアップロードコンポーネント
+      内容:
+      - ドラッグ&ドロップによるファイルアップロード
+      - クリックによるファイル選択
+      - ファイルタイプのバリデーション
+      - プログレスバーの表示
+      - エラーハンドリング
+      - アップロード制限の管理
+      - ファイルプレビューの表示制御"""
+    dependency:
+      - components/FileUpload/FilePreview.tsx
+
+  FileUpload/FilePreview.tsx:
+    content: |-
+      """ファイルプレビューコンポーネント
+      内容:
+      - 画像のサムネイル表示
+      - ファイル種類に応じたアイコン表示
+      - ファイルサイズと名前の表示
+      - プレビュー削除機能
+      - ファイル一覧表示
+      - ダウンロードボタン
+      - ファイル種類別の表示制御"""
+    dependency: []
+
+  Media/MediaViewer.tsx:
+    content: |-
+      """メディアビューアーコンポーネント
+      内容:
+      - 画像のライトボックス表示
+      - 動画プレーヤーの埋め込み
+      - ズーム機能
+      - スライドショー機能
+      - キーボードナビゲーション
+      - タッチジェスチャー対応
+      - フルスクリーン表示"""
+    dependency: []
+
+  Media/AudioRecorder.tsx:
+    content: |-
+      """音声レコーダーコンポーネント
+      内容:
+      - 音声録音機能
+      - 録音時間の表示
+      - 波形表示
+      - 再生/一時停止制御
+      - 録音品質の設定
+      - ファイル形式の選択
+      - 保存と共有機能"""
+    dependency: []
+
 styles:
   tailwind:
     content: |-
