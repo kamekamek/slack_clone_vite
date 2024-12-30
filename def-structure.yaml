@@ -6,6 +6,8 @@ main:
       - レイアウト構成（Flexbox使用）
       - コンポーネントの統合
       - メインの状態管理（useSlackClone）の統合
+      - 認証システムの統合（useAuth）
+      - ユーザープロフィール管理の統合（useUserProfile）
       - チャンネル作成・選択のコールバック管理
       - メッセージの永続化管理"""
     dependency:
@@ -13,8 +15,35 @@ main:
       - components/MessageList.tsx
       - components/MessageInput.tsx
       - hooks/useSlackClone.ts
+      - hooks/useAuth.ts
+      - hooks/useUserProfile.ts
+      - components/Auth/AuthModal.tsx
+      - components/UserProfile/UserProfileModal.tsx
 
 hooks:
+  useAuth.ts:
+    content: |-
+      """認証管理カスタムフック
+      内容:
+      - ユーザー認証状態の管理
+      - ログイン/ログアウト機能
+      - ユーザー登録機能
+      - ゲストアクセス機能
+      - パスワードリセット機能
+      - LocalStorageを使用した認証情報の永続化"""
+    dependency: []
+
+  useUserProfile.ts:
+    content: |-
+      """ユーザープロフィール管理カスタムフック
+      内容:
+      - プロフィール情報の管理
+      - アバター画像のアップロード
+      - ステータスメッセージの更新
+      - オンライン/オフライン状態の管理
+      - LocalStorageを使用したプロフィール情報の永続化"""
+    dependency: []
+
   useSlackClone.ts:
     content: |-
       """Slackクローンのカスタムフック
@@ -32,6 +61,31 @@ hooks:
     dependency: []
 
 components:
+  Auth/AuthModal.tsx:
+    content: |-
+      """認証モーダルコンポーネント
+      内容:
+      - ログインフォーム
+      - ユーザー登録フォーム
+      - パスワードリセットフォーム
+      - ゲストログインボタン
+      - フォームの切り替え機能
+      - エラーハンドリング
+      - アクセシビリティ対応"""
+    dependency: []
+
+  UserProfile/UserProfileModal.tsx:
+    content: |-
+      """ユーザープロフィールモーダルコンポーネント
+      内容:
+      - プロフィール情報の表示・編集
+      - アバター画像のアップロード
+      - ステータスメッセージの設定
+      - オンライン/オフライン状態の切り替え
+      - フォームバリデーション
+      - エラーハンドリング"""
+    dependency: []
+
   Sidebar.tsx:
     content: |-
       """サイドバーコンポーネント
@@ -41,6 +95,8 @@ components:
       - チャンネル作成モーダルの状態管理
       - ダークモード対応（bg-[#1a1d21]）
       - Plusアイコンによるチャンネル作成ボタン
+      - ホーザープロフィールの表示
+      - ログアウトボタン
       - ホバーエフェクトの実装"""
     dependency:
       - components/CreateChannelModal.tsx

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from './useAuth';
+import { useUserProfile } from './useUserProfile';
 
 interface Message {
   id: string;
   text: string;
   user: string;
+  userId: string;
   timestamp: Date;
   channelId: string;
   isEdited?: boolean;
@@ -20,12 +23,16 @@ interface Channel {
 }
 
 export function useSlackClone() {
+  const { user, isAuthenticated } = useAuth();
+  const { userProfile } = useUserProfile();
+  
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('slack-clone-messages');
     return saved ? JSON.parse(saved) : [{
       id: '1',
       text: 'Welcome to the channel! 👋',
       user: 'System',
+      userId: 'system',
       timestamp: new Date(),
       channelId: 'general'
     }];
@@ -44,10 +51,15 @@ export function useSlackClone() {
   }, [messages]);
 
   const sendMessage = (text: string) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('Must be authenticated to send messages');
+    }
+    
     const newMessage: Message = {
       id: Date.now().toString(),
       text,
-      user: 'You',
+      user: userProfile?.displayName || user.email || 'Anonymous',
+      userId: user.uid,
       timestamp: new Date(),
       channelId: currentChannel
     };
@@ -55,8 +67,12 @@ export function useSlackClone() {
   };
 
   const editMessage = (messageId: string, newText: string) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('Must be authenticated to edit messages');
+    }
+    
     setMessages(prev => prev.map(msg => {
-      if (msg.id === messageId) {
+      if (msg.id === messageId && msg.userId === user.uid) {
         return {
           ...msg,
           text: newText,
@@ -72,7 +88,13 @@ export function useSlackClone() {
   };
 
   const deleteMessage = (messageId: string) => {
-    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    if (!isAuthenticated || !user) {
+      throw new Error('Must be authenticated to delete messages');
+    }
+    
+    setMessages(prev => prev.filter(msg => 
+      !(msg.id === messageId && msg.userId === user.uid)
+    ));
   };
 
   const getMessageHistory = (messageId: string) => {
@@ -91,6 +113,10 @@ export function useSlackClone() {
   };
 
   const createChannel = (displayName: string) => {
+    if (!isAuthenticated) {
+      throw new Error('Must be authenticated to create channels');
+    }
+    
     validateChannelName(displayName);
     
     const id = Date.now().toString();
@@ -115,6 +141,8 @@ export function useSlackClone() {
     createChannel,
     editMessage,
     deleteMessage,
-    getMessageHistory
+    getMessageHistory,
+    isAuthenticated,
+    currentUser: user
   };
 }
