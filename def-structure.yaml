@@ -26,27 +26,6 @@ hooks:
       - メッセージのチャンネルごとのフィルタリング"""
     dependency: []
 
-  useLocalStorage.ts:
-    content: |-
-      """ローカルストレージ管理カスタムフック
-      内容:
-      - 永続化データの読み書き
-      - 型安全な状態管理
-      - エラーハンドリング"""
-    dependency: []
-
-  useMessages.ts:
-    content: |-
-      """メッセージ管理カスタムフック
-      内容:
-      - チャンネルごとのメッセージ永続化
-      - メッセージの追加機能
-      - チャンネルベースのフィルタリング
-      - UUIDベースのメッセージID生成"""
-    dependency:
-      - hooks/useLocalStorage.ts
-      - types/message.ts
-
 components:
   Sidebar.tsx:
     content: |-
@@ -66,22 +45,23 @@ components:
       """メッセージリストコンポーネント
       内容:
       - メッセージの時系列表示
-      - 編集状態の表示
-      - タイムスタンプのローカライズ
-      - メッセージカードのスタイリング
-      - シャドウ効果とホバー状態"""
-    dependency:
-      - types/message.ts
+      - ユーザーアバター（グラデーション背景 blue-500 to purple-500）
+      - タイムスタンプのローカライズ表示
+      - 自動スクロール機能（新規メッセージ）
+      - メッセージホバーエフェクト（bg-gray-50）
+      - チャンネルヘッダー表示（border-b）"""
+    dependency: []
 
   MessageInput.tsx:
     content: |-
       """メッセージ入力コンポーネント
       内容:
-      - フォーム制御
-      - 空メッセージの送信防止
-      - 入力フィールドのスタイリング
-      - 送信ボタンのインタラクション
-      - 絵文字ピッカーの統合"""
+      - メッセージ入力フォーム（フォーカス時のリング効果）
+      - 絵文字ピッカーの統合（Ctrl+E でトグル）
+      - キーボードショートカット（Ctrl+Enter送信）
+      - 送信ボタン（無効化状態管理）
+      - Lucideアイコンの使用（Send, Smile）
+      - レスポンシブな入力エリア"""
     dependency:
       - components/EmojiPicker.tsx
 
@@ -109,19 +89,6 @@ components:
       - キャンセル/作成ボタンの実装（青色テーマ）"""
     dependency: []
 
-  Channel.tsx:
-    content: |-
-      """チャンネルコンポーネント
-      内容:
-      - メッセージリストとインプットの統合
-      - チャンネルごとのメッセージ管理
-      - フレックスレイアウトによる画面構成
-      - スクロール可能なメッセージエリア"""
-    dependency:
-      - components/MessageList.tsx
-      - components/MessageInput.tsx
-      - hooks/useMessages.ts
-
 styles:
   tailwind:
     content: |-
@@ -135,12 +102,3 @@ styles:
       - モーダルのz-indexレイヤリング
       - グラデーション背景（アバター）
       - カスタムカラー（#1a1d21）"""
-
-types:
-  message.ts:
-    content: |-
-      """メッセージの型定義
-      内容:
-      - メッセージのインターフェース定義
-      - id, content, channelId, timestamps等の基本プロパティ
-      - 編集状態の管理用フラグ"""
