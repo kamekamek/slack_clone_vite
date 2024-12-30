@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Smile } from 'lucide-react';
+import { Send, Smile, Code } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface MessageInputProps {
   onSendMessage: (text: string) => void;
@@ -10,7 +13,8 @@ interface MessageInputProps {
 export function MessageInput({ onSendMessage, currentChannel }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -33,10 +37,17 @@ export function MessageInput({ onSendMessage, currentChannel }: MessageInputProp
     return () => inputRef.current?.removeEventListener('keydown', handleKeyDown);
   }, [message, onSendMessage]);
 
+  const processMessage = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const processedText = text.replace(urlRegex, '[$1]($1)');
+    return processedText;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
-      onSendMessage(message);
+      const processedMessage = processMessage(message);
+      onSendMessage(processedMessage);
       setMessage('');
     }
   };
@@ -49,16 +60,55 @@ export function MessageInput({ onSendMessage, currentChannel }: MessageInputProp
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
-      <div className="flex items-center space-x-2">
+      <div className="flex flex-col space-y-2">
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setIsPreviewMode(!isPreviewMode)}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+            title="Toggle Preview"
+          >
+            <Code className="w-5 h-5" />
+          </button>
+        </div>
+        
         <div className="relative flex-1">
-          <input
-            ref={inputRef}
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={`Message #${currentChannel} (Ctrl+Enter to send)`}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-          />
+          {isPreviewMode ? (
+            <div className="w-full rounded-lg border border-gray-300 px-4 py-2 min-h-[100px] markdown-preview">
+              <ReactMarkdown
+                components={{
+                  code: ({node, inline, className, children, ...props}) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    return !inline && match ? (
+                      <SyntaxHighlighter
+                        style={materialDark}
+                        language={match[1]}
+                        PreTag="div"
+                        {...props}
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    ) : (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    )
+                  }
+                }}
+              >
+                {message}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <textarea
+              ref={inputRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={`Message #${currentChannel} (Ctrl+Enter to send, supports Markdown)`}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 min-h-[100px]"
+            />
+          )}
+          
           <button
             ref={emojiButtonRef}
             type="button"
@@ -76,6 +126,7 @@ export function MessageInput({ onSendMessage, currentChannel }: MessageInputProp
             />
           )}
         </div>
+        
         <button
           type="submit"
           disabled={!message.trim()}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Message {
   id: string;
@@ -6,6 +6,11 @@ interface Message {
   user: string;
   timestamp: Date;
   channelId: string;
+  isEdited?: boolean;
+  editHistory?: Array<{
+    text: string;
+    editedAt: Date;
+  }>;
 }
 
 interface Channel {
@@ -15,15 +20,16 @@ interface Channel {
 }
 
 export function useSlackClone() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('slack-clone-messages');
+    return saved ? JSON.parse(saved) : [{
       id: '1',
       text: 'Welcome to the channel! 👋',
       user: 'System',
       timestamp: new Date(),
       channelId: 'general'
-    }
-  ]);
+    }];
+  });
   
   const [channels, setChannels] = useState<Channel[]>([
     { id: 'general', name: 'general', displayName: 'general' },
@@ -32,6 +38,10 @@ export function useSlackClone() {
   ]);
   
   const [currentChannel, setCurrentChannel] = useState<string>('general');
+
+  useEffect(() => {
+    localStorage.setItem('slack-clone-messages', JSON.stringify(messages));
+  }, [messages]);
 
   const sendMessage = (text: string) => {
     const newMessage: Message = {
@@ -42,6 +52,32 @@ export function useSlackClone() {
       channelId: currentChannel
     };
     setMessages(prev => [...prev, newMessage]);
+  };
+
+  const editMessage = (messageId: string, newText: string) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return {
+          ...msg,
+          text: newText,
+          isEdited: true,
+          editHistory: [...(msg.editHistory || []), {
+            text: msg.text,
+            editedAt: new Date()
+          }]
+        };
+      }
+      return msg;
+    }));
+  };
+
+  const deleteMessage = (messageId: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+  };
+
+  const getMessageHistory = (messageId: string) => {
+    const message = messages.find(msg => msg.id === messageId);
+    return message?.editHistory || [];
   };
 
   const validateChannelName = (name: string): boolean => {
@@ -76,6 +112,9 @@ export function useSlackClone() {
     currentChannel,
     setCurrentChannel,
     sendMessage,
-    createChannel
+    createChannel,
+    editMessage,
+    deleteMessage,
+    getMessageHistory
   };
 }
