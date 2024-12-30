@@ -1,0 +1,101 @@
+main:
+  app.tsx:
+    content: |-
+      """メインアプリケーションコンポーネント
+      内容:
+      - レイアウト構成（Flexbox使用）
+      - コンポーネントの統合
+      - メインの状態管理（useSlackClone）の統合
+      - チャンネル作成・選択のコールバック管理"""
+    dependency:
+      - components/Sidebar.tsx
+      - components/MessageList.tsx
+      - components/MessageInput.tsx
+      - hooks/useSlackClone.ts
+
+hooks:
+  useSlackClone.ts:
+    content: |-
+      """Slackクローンのカスタムフック
+      内容:
+      - メッセージの状態管理（送信、フィルタリング）
+      - チャンネルの状態管理（作成、選択）
+      - 日本語チャンネル名のバリデーション（2-80文字制限）
+      - チャンネル名の重複チェック（大文字小文字区別なし）
+      - タイムスタンプベースのID生成
+      - メッセージのチャンネルごとのフィルタリング"""
+    dependency: []
+
+components:
+  Sidebar.tsx:
+    content: |-
+      """サイドバーコンポーネント
+      内容:
+      - チャンネルリストの表示
+      - 現在のチャンネルのハイライト表示（青色背景）
+      - チャンネル作成モーダルの状態管理
+      - Lucideアイコンの使用（Hash, Plus）
+      - ホバーエフェクトの実装"""
+    dependency:
+      - components/CreateChannelModal.tsx
+
+  MessageList.tsx:
+    content: |-
+      """メッセージリストコンポーネント
+      内容:
+      - メッセージの時系列表示
+      - ユーザーアバター（グラデーション背景）
+      - タイムスタンプのローカライズ表示
+      - 自動スクロール機能（新規メッセージ）
+      - メッセージホバーエフェクト
+      - チャンネルヘッダー表示"""
+    dependency: []
+
+  MessageInput.tsx:
+    content: |-
+      """メッセージ入力コンポーネント
+      内容:
+      - メッセージ入力フォーム
+      - 絵文字ピッカーの統合
+      - キーボードショートカット（Ctrl+Enter送信, Ctrl+E絵文字）
+      - 送信ボタン（無効化状態管理）
+      - フォーカス管理
+      - Lucideアイコンの使用（Send, Smile）"""
+    dependency:
+      - components/EmojiPicker.tsx
+
+  EmojiPicker.tsx:
+    content: |-
+      """絵文字選択コンポーネント
+      内容:
+      - @emoji-mart/react の統合
+      - ポップオーバー表示（下部配置）
+      - クリックアウト処理（トリガー要素除外）
+      - Escキーでの閉じる機能
+      - スキントーン選択の無効化
+      - プレビュー位置の最適化"""
+    dependency: []
+
+  CreateChannelModal.tsx:
+    content: |-
+      """チャンネル作成モーダル
+      内容:
+      - 日本語入力フォーム
+      - バリデーションエラー表示
+      - モーダルのオーバーレイ（背景クリックで閉じる）
+      - アクセシビリティ対応
+      - フォームのクリア処理
+      - キャンセル/作成ボタンの実装"""
+    dependency: []
+
+styles:
+  tailwind:
+    content: |-
+      """Tailwind CSS設定
+      特徴:
+      - フレックスボックスレイアウト
+      - レスポンシブデザイン
+      - ダークモードの部分適用（サイドバー）
+      - トランジションエフェクト（ホバー、フォーカス）
+      - フォームコントロールのスタイリング
+      - モーダルのz-indexレイヤリング"""
