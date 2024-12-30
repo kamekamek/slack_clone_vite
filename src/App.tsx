@@ -41,7 +41,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(!isAuthenticated);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  if (isAuthLoading || isProfileLoading) {
+  if (isAuthLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-gray-600">読み込み中...</div>
@@ -84,10 +84,16 @@ function App() {
         />
       </div>
 
-      {showProfileModal && profile && (
+      {showProfileModal && (
         <UserProfileModal
           onClose={() => setShowProfileModal(false)}
-          profile={profile}
+          profile={profile || {
+            id: user.id,
+            username: user.username,
+            avatarUrl: null,
+            status: '',
+            isOnline: true,
+          }}
           onUpdateProfile={updateProfile}
           onUploadAvatar={uploadAvatar}
           onUpdateOnlineStatus={setOnlineStatus}

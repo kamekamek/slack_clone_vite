@@ -15,14 +15,29 @@ interface UserProfileState {
 
 export function useUserProfile(userId: string | null) {
   const [profileState, setProfileState] = useState<UserProfileState>(() => {
+    if (!userId) {
+      return { profile: null, isLoading: false };
+    }
+
     const savedProfile = localStorage.getItem(`slack-clone-profile-${userId}`);
-    return savedProfile
-      ? JSON.parse(savedProfile)
-      : { profile: null, isLoading: true };
+    if (savedProfile) {
+      return JSON.parse(savedProfile);
+    }
+
+    // デフォルトプロフィールを作成
+    const defaultProfile: UserProfile = {
+      id: userId,
+      username: `ユーザー${userId.slice(0, 4)}`,
+      avatarUrl: null,
+      status: '',
+      isOnline: true,
+    };
+
+    return { profile: defaultProfile, isLoading: false };
   });
 
   useEffect(() => {
-    if (userId) {
+    if (userId && profileState.profile) {
       localStorage.setItem(
         `slack-clone-profile-${userId}`,
         JSON.stringify(profileState)

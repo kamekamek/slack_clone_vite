@@ -7,6 +7,7 @@
 3. 依存関係の最適化エラー（504 Outdated Optimize Dep）
 4. Google Fontsの読み込みエラー
 5. MessageListコンポーネントでのundefinedエラー
+6. 認証の永続的ローディング状態
 
 ## 問題の原因
 
@@ -31,6 +32,12 @@
 - メッセージの編集履歴（editHistory）が初期化されていない状態でアクセスされた
 - オプショナルチェイニングの欠如
 - 型安全性の不足
+
+### 6. 認証の永続的ローディング状態
+- `useAuth`フックの初期化時に`isLoading`が`true`に設定されたまま
+- ローカルストレージからの読み込み完了後も`isLoading`が更新されない
+- 各認証操作（ログイン、登録など）でのローディング状態の管理が不適切
+- エラー発生時のローディング状態のリセットが行われていない
 
 ## 対処方法
 
@@ -98,6 +105,38 @@ interface Message {
 }
 ```
 
+### 6. 認証ローディング状態の修正
+```typescript
+// useAuth.tsの初期化処理の修正
+const [authState, setAuthState] = useState<AuthState>(() => {
+  const savedAuth = localStorage.getItem('slack-clone-auth');
+  if (savedAuth) {
+    const parsed = JSON.parse(savedAuth);
+    return { ...parsed, isLoading: false };
+  }
+  return { user: null, isAuthenticated: false, isLoading: false };
+});
+
+// 各認証操作でのローディング状態の管理
+const login = async (email: string, password: string) => {
+  setAuthState(prev => ({ ...prev, isLoading: true }));
+  try {
+    // 認証処理
+    setAuthState({ user: mockUser, isAuthenticated: true, isLoading: false });
+  } catch (error) {
+    setAuthState(prev => ({ ...prev, isLoading: false }));
+    throw error;
+  }
+};
+
+// LocalStorage保存時のローディング状態チェック
+useEffect(() => {
+  if (!authState.isLoading) {
+    localStorage.setItem('slack-clone-auth', JSON.stringify(authState));
+  }
+}, [authState]);
+```
+
 ## 予防策
 
 1. **設定ファイルの命名規則**
@@ -121,3 +160,10 @@ interface Message {
    - オプショナルプロパティの適切な型定義
    - nullチェックとオプショナルチェイニングの活用
    - コンポーネントのprops型の明確な定義 
+
+6. **状態管理の原則**
+   - 初期状態の適切な設定
+   - 非同期操作前後での状態更新の確実な実行
+   - エラーハンドリング時の状態リセット
+   - 副作用（useEffect）での条件チェック
+   - ローディング状態の適切な管理と表示 
