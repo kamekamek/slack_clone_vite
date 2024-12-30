@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Lock, Hash } from 'lucide-react';
 
 interface CreateChannelModalProps {
   onClose: () => void;
-  onCreateChannel: (name: string) => void;
+  onCreateChannel: (name: string, description: string, isPrivate: boolean) => void;
 }
 
 export function CreateChannelModal({ onClose, onCreateChannel }: CreateChannelModalProps) {
   const [channelName, setChannelName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -20,7 +22,7 @@ export function CreateChannelModal({ onClose, onCreateChannel }: CreateChannelMo
     }
 
     try {
-      onCreateChannel(channelName);
+      onCreateChannel(channelName, description, isPrivate);
       onClose();
     } catch (err) {
       setError((err as Error).message);
@@ -41,23 +43,56 @@ export function CreateChannelModal({ onClose, onCreateChannel }: CreateChannelMo
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
             <label htmlFor="channelName" className="block text-sm font-medium text-gray-700 mb-1">
               チャンネル名
             </label>
-            <input
-              type="text"
-              id="channelName"
-              value={channelName}
-              onChange={(e) => setChannelName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="例：プロジェクト更新"
-            />
-            {error && (
-              <p className="mt-1 text-sm text-red-600">{error}</p>
-            )}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                {isPrivate ? <Lock className="w-4 h-4 text-gray-400" /> : <Hash className="w-4 h-4 text-gray-400" />}
+              </div>
+              <input
+                type="text"
+                id="channelName"
+                value={channelName}
+                onChange={(e) => setChannelName(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="例：プロジェクト更新"
+              />
+            </div>
           </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              説明（オプション）
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="チャンネルの目的を説明してください"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="isPrivate"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="isPrivate" className="text-sm text-gray-700">
+              プライベートチャンネルにする
+            </label>
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
 
           <div className="flex justify-end space-x-3">
             <button

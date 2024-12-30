@@ -10,6 +10,8 @@ interface Message {
   timestamp: Date;
   channelId: string;
   isEdited?: boolean;
+  isPinned?: boolean;
+  mentions?: string[];
   editHistory?: Array<{
     text: string;
     editedAt: Date;
@@ -20,6 +22,14 @@ interface Channel {
   id: string;
   name: string;
   displayName: string;
+  description?: string;
+  isArchived?: boolean;
+  isPrivate?: boolean;
+  members?: string[];
+  pinnedMessages?: string[];
+  isFavorite?: boolean;
+  createdBy?: string;
+  createdAt: Date;
 }
 
 export function useSlackClone() {
@@ -39,9 +49,28 @@ export function useSlackClone() {
   });
   
   const [channels, setChannels] = useState<Channel[]>([
-    { id: 'general', name: 'general', displayName: 'general' },
-    { id: 'random', name: 'random', displayName: 'random' },
-    { id: 'help', name: 'help', displayName: 'help' }
+    {
+      id: 'general',
+      name: 'general',
+      displayName: 'general',
+      description: '一般的な議論のためのチャンネル',
+      isPrivate: false,
+      members: [],
+      pinnedMessages: [],
+      createdAt: new Date(),
+      createdBy: 'system'
+    },
+    {
+      id: 'random',
+      name: 'random',
+      displayName: 'random',
+      description: 'カジュアルな会話のためのチャンネル',
+      isPrivate: false,
+      members: [],
+      pinnedMessages: [],
+      createdAt: new Date(),
+      createdBy: 'system'
+    }
   ]);
   
   const [currentChannel, setCurrentChannel] = useState<string>('general');
@@ -112,7 +141,30 @@ export function useSlackClone() {
     return true;
   };
 
-  const createChannel = (displayName: string) => {
+  const togglePinMessage = (messageId: string) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('Must be authenticated to pin messages');
+    }
+    
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return { ...msg, isPinned: !msg.isPinned };
+      }
+      return msg;
+    }));
+    
+    setChannels(prev => prev.map(channel => {
+      if (channel.id === currentChannel) {
+        const pinnedMessages = channel.pinnedMessages.includes(messageId)
+          ? channel.pinnedMessages.filter(id => id !== messageId)
+          : [...channel.pinnedMessages, messageId];
+        return { ...channel, pinnedMessages };
+      }
+      return channel;
+    }));
+  };
+
+  const createChannel = (displayName: string, isPrivate: boolean = false, description: string = '') => {
     if (!isAuthenticated) {
       throw new Error('Must be authenticated to create channels');
     }
@@ -123,7 +175,13 @@ export function useSlackClone() {
     const newChannel: Channel = {
       id,
       name: displayName,
-      displayName
+      displayName,
+      description,
+      isArchived: false,
+      isPrivate,
+      members: [user!.uid],
+      pinnedMessages: [],
+      isFavorite: false
     };
     
     setChannels(prev => [...prev, newChannel]);
@@ -131,6 +189,83 @@ export function useSlackClone() {
   };
 
   const filteredMessages = messages.filter(msg => msg.channelId === currentChannel);
+
+  const updateChannel = (channelId: string, updates: Partial<Channel>) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('チャンネルを更新するには認証が必要です');
+    }
+
+    setChannels(prev => prev.map(channel => 
+      channel.id === channelId ? { ...channel, ...updates } : channel
+    ));
+  };
+
+  const archiveChannel = (channelId: string) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('チャンネルをアーカイブするには認証が必要です');
+    }
+
+    updateChannel(channelId, { isArchived: true });
+  };
+
+  const toggleChannelFavorite = (channelId: string) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('お気に入りを変更するには認証が必要です');
+    }
+
+    setChannels(prev => prev.map(channel => 
+      channel.id === channelId
+        ? { ...channel, isFavorite: !channel.isFavorite }
+        : channel
+    ));
+  };
+
+  const toggleMessagePin = (messageId: string) => {
+    if (!isAuthenticated || !user) {
+      throw new Error('メッセージをピン留めするには認証が必要です');
+    }
+
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    const channel = channels.find(c => c.id === message.channelId);
+    if (!channel) return;
+
+    const isPinned = channel.pinnedMessages?.includes(messageId);
+    const updatedPinnedMessages = isPinned
+      ? channel.pinnedMessages?.filter(id => id !== messageId)
+      : [...(channel.pinnedMessages || []), messageId];
+
+    updateChannel(message.channelId, { pinnedMessages: updatedPinnedMessages });
+  };
+
+  const searchMessages = (query: string, channelId?: string) => {
+    const searchInChannel = channelId 
+      ? messages.filter(m => m.channelId === channelId)
+      : messages;
+
+    return searchInChannel.filter(message => 
+      message.text.toLowerCase().includes(query.toLowerCase()) ||
+      message.mentions?.some(mention => mention.toLowerCase().includes(query.toLowerCase()))
+    );
+  };
+
+  const addMention = (messageId: string, userId: string) => {
+    setMessages(prev => prev.map(message => 
+      message.id === messageId
+        ? { ...message, mentions: [...(message.mentions || []), userId] }
+        : message
+    ));
+  };
+
+  const getPinnedMessages = (channelId: string) => {
+    const channel = channels.find(c => c.id === channelId);
+    if (!channel || !channel.pinnedMessages) return [];
+
+    return messages.filter(message => 
+      channel.pinnedMessages?.includes(message.id)
+    );
+  };
 
   return {
     messages: filteredMessages,
@@ -143,6 +278,13 @@ export function useSlackClone() {
     deleteMessage,
     getMessageHistory,
     isAuthenticated,
-    currentUser: user
+    currentUser: user,
+    updateChannel,
+    archiveChannel,
+    toggleChannelFavorite,
+    toggleMessagePin,
+    searchMessages,
+    addMention,
+    getPinnedMessages
   };
 }
