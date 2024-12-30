@@ -2,6 +2,22 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useUserProfile } from './useUserProfile';
 
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  displayName?: string;
+}
+
+interface UserProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  status?: string;
+  isOnline?: boolean;
+}
+
 interface Message {
   id: string;
   text: string;
@@ -34,7 +50,7 @@ interface Channel {
 
 export function useSlackClone() {
   const { user, isAuthenticated } = useAuth();
-  const { userProfile } = useUserProfile();
+  const { profile: userProfile } = useUserProfile(user?.id || null);
   
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('slack-clone-messages');
@@ -87,8 +103,8 @@ export function useSlackClone() {
     const newMessage: Message = {
       id: Date.now().toString(),
       text,
-      user: userProfile?.displayName || user.email || 'Anonymous',
-      userId: user.uid,
+      user: userProfile?.username || user.username || 'Anonymous',
+      userId: user.id,
       timestamp: new Date(),
       channelId: currentChannel
     };
@@ -101,7 +117,7 @@ export function useSlackClone() {
     }
     
     setMessages(prev => prev.map(msg => {
-      if (msg.id === messageId && msg.userId === user.uid) {
+      if (msg.id === messageId && msg.userId === user.id) {
         return {
           ...msg,
           text: newText,
@@ -122,7 +138,7 @@ export function useSlackClone() {
     }
     
     setMessages(prev => prev.filter(msg => 
-      !(msg.id === messageId && msg.userId === user.uid)
+      !(msg.id === messageId && msg.userId === user.id)
     ));
   };
 
@@ -141,31 +157,8 @@ export function useSlackClone() {
     return true;
   };
 
-  const togglePinMessage = (messageId: string) => {
+  const createChannel = (displayName: string, description: string = '', isPrivate: boolean = false) => {
     if (!isAuthenticated || !user) {
-      throw new Error('Must be authenticated to pin messages');
-    }
-    
-    setMessages(prev => prev.map(msg => {
-      if (msg.id === messageId) {
-        return { ...msg, isPinned: !msg.isPinned };
-      }
-      return msg;
-    }));
-    
-    setChannels(prev => prev.map(channel => {
-      if (channel.id === currentChannel) {
-        const pinnedMessages = channel.pinnedMessages.includes(messageId)
-          ? channel.pinnedMessages.filter(id => id !== messageId)
-          : [...channel.pinnedMessages, messageId];
-        return { ...channel, pinnedMessages };
-      }
-      return channel;
-    }));
-  };
-
-  const createChannel = (displayName: string, isPrivate: boolean = false, description: string = '') => {
-    if (!isAuthenticated) {
       throw new Error('Must be authenticated to create channels');
     }
     
@@ -179,16 +172,16 @@ export function useSlackClone() {
       description,
       isArchived: false,
       isPrivate,
-      members: [user!.uid],
+      members: [user.id],
       pinnedMessages: [],
-      isFavorite: false
+      isFavorite: false,
+      createdBy: user.id,
+      createdAt: new Date()
     };
     
     setChannels(prev => [...prev, newChannel]);
     return newChannel;
   };
-
-  const filteredMessages = messages.filter(msg => msg.channelId === currentChannel);
 
   const updateChannel = (channelId: string, updates: Partial<Channel>) => {
     if (!isAuthenticated || !user) {
@@ -233,7 +226,7 @@ export function useSlackClone() {
 
     const isPinned = channel.pinnedMessages?.includes(messageId);
     const updatedPinnedMessages = isPinned
-      ? channel.pinnedMessages?.filter(id => id !== messageId)
+      ? channel.pinnedMessages?.filter(id => id !== messageId) || []
       : [...(channel.pinnedMessages || []), messageId];
 
     updateChannel(message.channelId, { pinnedMessages: updatedPinnedMessages });
@@ -266,6 +259,8 @@ export function useSlackClone() {
       channel.pinnedMessages?.includes(message.id)
     );
   };
+
+  const filteredMessages = messages.filter(msg => msg.channelId === currentChannel);
 
   return {
     messages: filteredMessages,

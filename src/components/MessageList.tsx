@@ -42,7 +42,7 @@ export function MessageList({
   onDeleteMessage,
   onTogglePin,
   onMention,
-  pinnedMessages
+  pinnedMessages = []
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export function MessageList({
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
-      {pinnedMessages.length > 0 && (
+      {pinnedMessages?.length > 0 && (
         <div className="mb-6 bg-gray-50 rounded-lg p-4">
           <h3 className="text-sm font-medium text-gray-700 mb-2">
             📌 ピン留めされたメッセージ ({pinnedMessages.length})
