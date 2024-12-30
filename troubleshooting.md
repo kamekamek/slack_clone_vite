@@ -6,6 +6,7 @@
 2. リソースのブロック（ERR_BLOCKED_BY_CLIENT）
 3. 依存関係の最適化エラー（504 Outdated Optimize Dep）
 4. Google Fontsの読み込みエラー
+5. MessageListコンポーネントでのundefinedエラー
 
 ## 問題の原因
 
@@ -25,6 +26,11 @@
 
 ### 4. Google Fontsの読み込みエラー
 - CSPの設定でGoogle Fontsドメインが許可されていなかった
+
+### 5. MessageListコンポーネントでのundefinedエラー
+- メッセージの編集履歴（editHistory）が初期化されていない状態でアクセスされた
+- オプショナルチェイニングの欠如
+- 型安全性の不足
 
 ## 対処方法
 
@@ -75,6 +81,23 @@ rm -rf node_modules
 npm install
 ```
 
+### 5. MessageListコンポーネントの修正
+```typescript
+// オプショナルチェイニングを使用して安全にアクセス
+{message.editHistory?.length > 0 && (
+  // 編集履歴の表示ロジック
+)}
+
+// 型の定義を明確化
+interface Message {
+  editHistory?: Array<{
+    text: string;
+    timestamp: Date;
+  }>;
+  // その他のプロパティ
+}
+```
+
 ## 予防策
 
 1. **設定ファイルの命名規則**
@@ -92,3 +115,9 @@ npm install
 4. **開発環境のセットアップ**
    - ブラウザ拡張機能の影響を考慮
    - 開発時は必要に応じてAdBlockerを一時的に無効化 
+
+5. **型安全性の確保**
+   - TypeScriptの厳格モードを有効化
+   - オプショナルプロパティの適切な型定義
+   - nullチェックとオプショナルチェイニングの活用
+   - コンポーネントのprops型の明確な定義 

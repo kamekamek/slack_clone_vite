@@ -104,7 +104,7 @@ export function MessageList({ messages, currentChannel, onEditMessage, onDeleteM
               ) : (
                 <p className="mt-1 text-gray-900">{message.text}</p>
               )}
-              {message.editHistory.length > 0 && (
+              {message.editHistory?.length > 0 && (
                 <div className="mt-1">
                   <button
                     onClick={() => setShowHistory(showHistory === message.id ? null : message.id)}
@@ -114,7 +114,7 @@ export function MessageList({ messages, currentChannel, onEditMessage, onDeleteM
                   </button>
                   {showHistory === message.id && (
                     <div className="mt-2 text-sm text-gray-500">
-                      {message.editHistory.map((edit, index) => (
+                      {message.editHistory?.map((edit, index) => (
                         <div key={index} className="mt-1">
                           <span>{edit.text}</span>
                           <span className="ml-2 text-xs">
