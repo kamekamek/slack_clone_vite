@@ -19,7 +19,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages }) => {
           <div className="p-4">
             <div className="flex items-baseline gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                {message.content[0]?.toUpperCase()}
+                {message.content?.[0]?.toUpperCase() || '?'}
               </div>
               <div className="flex-1">
                 <div className="flex items-baseline gap-2">
