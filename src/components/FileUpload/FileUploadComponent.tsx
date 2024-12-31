@@ -7,40 +7,74 @@ interface FileUploadProps {
   onFileUpload: (files: File[]) => void;
   maxSize?: number;
   acceptedTypes?: string[];
+  onError?: (error: string) => void;
+}
+
+interface UploadProgress {
+  [key: string]: number;
 }
 
 export const FileUploadComponent: React.FC<FileUploadProps> = ({
   onFileUpload,
   maxSize = 10 * 1024 * 1024, // デフォルト10MB
   acceptedTypes = ['image/*', 'video/*', 'audio/*', 'application/pdf'],
+  onError,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
+  const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback((newFiles: File[]) => {
-    // 重複チェック
-    const uniqueFiles = newFiles.filter(newFile => 
-      !files.some(existingFile => 
-        existingFile.name === newFile.name && 
-        existingFile.size === newFile.size
-      )
-    );
+    try {
+      // 重複チェック
+      const uniqueFiles = newFiles.filter(newFile => 
+        !files.some(existingFile => 
+          existingFile.name === newFile.name && 
+          existingFile.size === newFile.size
+        )
+      );
 
-    if (uniqueFiles.length === 0) {
-      alert('選択されたファイルは既にアップロード済みです。');
-      return;
+      if (uniqueFiles.length === 0) {
+        throw new Error('選択されたファイルは既にアップロード済みです。');
+      }
+
+      // サイズチェック
+      const oversizedFiles = uniqueFiles.filter(file => file.size > maxSize);
+      if (oversizedFiles.length > 0) {
+        throw new Error(`以下のファイルは最大サイズ(${Math.round(maxSize / 1024 / 1024)}MB)を超えています:\n${oversizedFiles.map(f => f.name).join('\n')}`);
+      }
+
+      // ファイルタイプチェック
+      const invalidFiles = uniqueFiles.filter(file => 
+        !acceptedTypes.some(type => {
+          if (type.endsWith('/*')) {
+            return file.type.startsWith(type.replace('/*', '/'));
+          }
+          return file.type === type;
+        })
+      );
+
+      if (invalidFiles.length > 0) {
+        throw new Error(`以下のファイルは許可されていない形式です:\n${invalidFiles.map(f => f.name).join('\n')}`);
+      }
+
+      // アップロードの進捗を初期化
+      const newProgress = { ...uploadProgress };
+      uniqueFiles.forEach(file => {
+        newProgress[file.name] = 0;
+      });
+      setUploadProgress(newProgress);
+
+      setFiles(prev => [...prev, ...uniqueFiles]);
+      onFileUpload(uniqueFiles);
+      setError('');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '不明なエラーが発生しました。';
+      setError(errorMessage);
+      onError?.(errorMessage);
     }
-
-    // サイズチェック
-    const oversizedFiles = uniqueFiles.filter(file => file.size > maxSize);
-    if (oversizedFiles.length > 0) {
-      alert(`以下のファイルは最大サイズ(${Math.round(maxSize / 1024 / 1024)}MB)を超えています:\n${oversizedFiles.map(f => f.name).join('\n')}`);
-      return;
-    }
-
-    setFiles(prev => [...prev, ...uniqueFiles]);
-    onFileUpload(uniqueFiles);
-  }, [onFileUpload, files, maxSize]);
+  }, [files, maxSize, acceptedTypes, onFileUpload, onError, uploadProgress]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     handleFiles(acceptedFiles);
@@ -62,11 +96,31 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
   };
 
   const removeFile = (index: number) => {
+    const removedFile = files[index];
     setFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[removedFile.name];
+      return newProgress;
+    });
+  };
+
+  // アップロードの進捗を更新する関数
+  const updateProgress = (fileName: string, progress: number) => {
+    setUploadProgress(prev => ({
+      ...prev,
+      [fileName]: progress,
+    }));
   };
 
   return (
     <div className="w-full space-y-4">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* 通常のファイルアップロードボタン */}
       <div className="flex justify-center">
         <button
@@ -104,17 +158,27 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
         </p>
       </div>
 
-
+      {/* アップロードされたファイルのプレビュー */}
       <div className="mt-4 space-y-2">
         {files.map((file, index) => (
           <div key={index} className="relative">
-            <FilePreview file={file} />
-            <button
-              onClick={() => removeFile(index)}
-              className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="relative">
+              <FilePreview file={file} />
+              <button
+                onClick={() => removeFile(index)}
+                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              {uploadProgress[file.name] !== undefined && uploadProgress[file.name] < 100 && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${uploadProgress[file.name]}%` }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
