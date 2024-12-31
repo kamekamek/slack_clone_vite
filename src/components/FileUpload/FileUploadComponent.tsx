@@ -15,22 +15,32 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
   acceptedTypes = ['image/*', 'video/*', 'audio/*', 'application/pdf'],
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback((newFiles: File[]) => {
-    setFiles(prev => [...prev, ...newFiles]);
-    onFileUpload(newFiles);
-    // アップロードの進捗をシミュレート
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-      }
-    }, 200);
-  }, [onFileUpload]);
+    // 重複チェック
+    const uniqueFiles = newFiles.filter(newFile => 
+      !files.some(existingFile => 
+        existingFile.name === newFile.name && 
+        existingFile.size === newFile.size
+      )
+    );
+
+    if (uniqueFiles.length === 0) {
+      alert('選択されたファイルは既にアップロード済みです。');
+      return;
+    }
+
+    // サイズチェック
+    const oversizedFiles = uniqueFiles.filter(file => file.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      alert(`以下のファイルは最大サイズ(${Math.round(maxSize / 1024 / 1024)}MB)を超えています:\n${oversizedFiles.map(f => f.name).join('\n')}`);
+      return;
+    }
+
+    setFiles(prev => [...prev, ...uniqueFiles]);
+    onFileUpload(uniqueFiles);
+  }, [onFileUpload, files, maxSize]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     handleFiles(acceptedFiles);
@@ -94,16 +104,6 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
         </p>
       </div>
 
-      {uploadProgress > 0 && uploadProgress < 100 && (
-        <div className="mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${uploadProgress}%` }}
-            />
-          </div>
-        </div>
-      )}
 
       <div className="mt-4 space-y-2">
         {files.map((file, index) => (
@@ -120,4 +120,4 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
       </div>
     </div>
   );
-}; 
+};
