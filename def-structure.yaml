@@ -185,16 +185,19 @@ components:
     content: |-
       """ファイルアップロードコンポーネント
       内容:
+      - 通常のファイルアップロードボタン（クリックで選択）
+      - 複数ファイル選択対応
       - ドラッグ&ドロップによるファイルアップロード（react-dropzone使用）
-      - クリックによるファイル選択
       - ファイルタイプのバリデーション（image, video, audio, PDF）
       - プログレスバーの表示（アニメーション付き）
       - エラーハンドリング
       - アップロード制限の管理（デフォルト10MB）
       - ファイルプレビューの表示制御
       - ファイル削除機能
-      - Lucideアイコンの使用（Upload, X）
-      - Tailwind CSSによるスタイリング"""
+      - 選択後のinput要素のリセット
+      - Lucideアイコンの使用（Upload, X, PlusCircle）
+      - Tailwind CSSによるスタイリング
+      - レスポンシブなレイアウト"""
     dependency:
       - components/FileUpload/FilePreview.tsx
 

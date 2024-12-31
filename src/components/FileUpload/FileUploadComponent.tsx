@@ -1,7 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FilePreview } from './FilePreview';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, PlusCircle } from 'lucide-react';
 
 interface FileUploadProps {
   onFileUpload: (files: File[]) => void;
@@ -16,10 +16,11 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles(prev => [...prev, ...acceptedFiles]);
-    onFileUpload(acceptedFiles);
+  const handleFiles = useCallback((newFiles: File[]) => {
+    setFiles(prev => [...prev, ...newFiles]);
+    onFileUpload(newFiles);
     // アップロードの進捗をシミュレート
     let progress = 0;
     const interval = setInterval(() => {
@@ -31,18 +32,51 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
     }, 200);
   }, [onFileUpload]);
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    handleFiles(acceptedFiles);
+  }, [handleFiles]);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxSize,
     accept: acceptedTypes.reduce((acc, curr) => ({ ...acc, [curr]: [] }), {}),
   });
 
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    handleFiles(selectedFiles);
+    // ファイル選択後にinput要素をリセット
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
+      {/* 通常のファイルアップロードボタン */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          <PlusCircle className="h-5 w-5 mr-2" />
+          ファイルを選択
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={acceptedTypes.join(',')}
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
+      </div>
+
+      {/* ドラッグ&ドロップエリア */}
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
@@ -53,7 +87,7 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
         <p className="mt-2 text-sm text-gray-600">
           {isDragActive
             ? 'ファイルをドロップしてください'
-            : 'クリックまたはドラッグ&ドロップでファイルをアップロード'}
+            : 'またはドラッグ&ドロップでファイルをアップロード'}
         </p>
         <p className="text-xs text-gray-500 mt-1">
           最大サイズ: {Math.round(maxSize / 1024 / 1024)}MB
