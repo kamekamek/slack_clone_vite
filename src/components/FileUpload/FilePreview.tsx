@@ -12,26 +12,44 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (file.type.startsWith('image/')) {
-      setLoading(true);
-      const reader = new FileReader();
-      
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-        setLoading(false);
-      };
-      
-      reader.onerror = () => {
-        setError('プレビューの読み込みに失敗しました');
-        setLoading(false);
-      };
+    setLoading(true);
+    let objectUrl: string | null = null;
 
-      reader.readAsDataURL(file);
-    }
+    const generatePreview = async () => {
+      try {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPreview(reader.result as string);
+            setLoading(false);
+          };
+          reader.onerror = () => {
+            setError('プレビューの読み込みに失敗しました');
+            setLoading(false);
+          };
+          reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+          objectUrl = URL.createObjectURL(file);
+          setPreview(objectUrl);
+          setLoading(false);
+        } else if (file.type === 'application/pdf') {
+          objectUrl = URL.createObjectURL(file);
+          setPreview(objectUrl);
+          setLoading(false);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        setError('プレビューの生成に失敗しました');
+        setLoading(false);
+      }
+    };
+
+    generatePreview();
 
     return () => {
-      if (preview) {
-        URL.revokeObjectURL(preview);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
       }
     };
   }, [file]);
@@ -76,36 +94,58 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
     }
   };
 
-  return (
-    <div className="flex items-center p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
-      <div className="flex-shrink-0 relative">
-        {loading ? (
-          <div className="h-16 w-16 flex items-center justify-center bg-gray-200 rounded animate-pulse">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  const renderPreview = () => {
+    if (loading) {
+      return (
+        <div className="h-16 w-16 flex items-center justify-center bg-gray-200 rounded animate-pulse">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="h-16 w-16 flex items-center justify-center bg-red-100 rounded">
+          <span className="text-red-500 text-xs text-center">エラー</span>
+        </div>
+      );
+    }
+
+    if (file.type.startsWith('image/') && preview) {
+      return (
+        <div className="relative group cursor-pointer" onClick={handlePreviewClick}>
+          <img src={preview} alt={file.name} className="h-16 w-16 object-cover rounded" />
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity">
+            <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-        ) : error ? (
-          <div className="h-16 w-16 flex items-center justify-center bg-red-100 rounded">
-            <span className="text-red-500 text-xs text-center">エラー</span>
-          </div>
-        ) : file.type.startsWith('image/') && preview ? (
-          <div
-            className="relative group cursor-pointer"
-            onClick={handlePreviewClick}
-          >
-            <img
-              src={preview}
-              alt={file.name}
-              className="h-16 w-16 object-cover rounded"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity">
-              <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </div>
-        ) : (
+        </div>
+      );
+    }
+
+    if ((file.type.startsWith('video/') || file.type.startsWith('audio/')) && preview) {
+      return (
+        <div className="relative group cursor-pointer" onClick={handlePreviewClick}>
           <div className="h-16 w-16 flex items-center justify-center bg-gray-100 rounded">
             {getFileIcon()}
           </div>
-        )}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity">
+            <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-16 w-16 flex items-center justify-center bg-gray-100 rounded">
+        {getFileIcon()}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex items-center p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
+      <div className="flex-shrink-0 relative">
+        {renderPreview()}
       </div>
 
       <div className="ml-4 flex-grow">
@@ -119,7 +159,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
         </div>
         <div className="flex items-center mt-1">
           <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-          {file.type.startsWith('image/') && (
+          {(file.type.startsWith('image/') || file.type.startsWith('video/') || 
+            file.type.startsWith('audio/') || file.type === 'application/pdf') && (
             <button
               onClick={handlePreviewClick}
               className="ml-2 text-xs text-blue-500 hover:text-blue-700 transition-colors"
@@ -139,4 +180,4 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
       </button>
     </div>
   );
-}; 
+};

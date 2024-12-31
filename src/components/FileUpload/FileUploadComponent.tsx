@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FilePreview } from '../FileUpload/FilePreview';
 import { Upload, X, PlusCircle } from 'lucide-react';
+import { MediaViewer } from '../Media/MediaViewer';
 
 interface FileUploadProps {
   onFileUpload: (files: File[]) => void;
@@ -23,6 +24,7 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
   const [files, setFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
   const [error, setError] = useState<string>('');
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback((newFiles: File[]) => {
@@ -163,7 +165,10 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
         {files.map((file, index) => (
           <div key={index} className="relative">
             <div className="relative">
-              <FilePreview file={file} />
+              <FilePreview 
+                file={file} 
+                onPreviewClick={() => setPreviewFile(file)}
+              />
               <button
                 onClick={() => removeFile(index)}
                 className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600"
@@ -182,6 +187,14 @@ export const FileUploadComponent: React.FC<FileUploadProps> = ({
           </div>
         ))}
       </div>
+
+      {/* プレビューモーダル */}
+      {previewFile && (
+        <MediaViewer
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </div>
   );
 };
