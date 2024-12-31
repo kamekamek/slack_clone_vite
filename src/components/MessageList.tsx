@@ -207,7 +207,14 @@ export function MessageList({
                         <div className="mt-2 space-y-2">
                           {message.attachments.map(attachment => (
                             <div key={attachment.id} className="relative">
-                              <FilePreview file={new File([], attachment.name, { type: attachment.type })} />
+                              <FilePreview 
+                                file={{
+                                  name: attachment.name,
+                                  type: attachment.type,
+                                  url: attachment.url,
+                                  size: attachment.size
+                                }} 
+                              />
                               {message.canEdit && (
                                 <button
                                   onClick={() => onDeleteAttachment(message.id, attachment.id)}
