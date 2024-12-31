@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Smile, Paperclip } from 'lucide-react';
+import { Send, Smile, Paperclip, Folder } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { FileUploadComponent } from './FileUpload/FileUploadComponent';
 
@@ -16,6 +16,7 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -66,9 +67,8 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
         onFileUpload(validFiles);
       }
       
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      // 入力をリセット
+      e.target.value = '';
     }
   };
 
@@ -81,7 +81,7 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={`Message #${currentChannel} (Ctrl+Enter to send)`}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-24"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-32"
             rows={3}
           />
           
@@ -90,9 +90,17 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="text-gray-500 hover:text-gray-700 transition-colors"
-              title="添付ファイル"
+              title="ファイルを添付"
             >
               <Paperclip className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => folderInputRef.current?.click()}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              title="フォルダを選択"
+            >
+              <Folder className="w-5 h-5" />
             </button>
             <button
               ref={emojiButtonRef}
@@ -105,8 +113,19 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
             </button>
           </div>
 
+          {/* 通常のファイル選択用input */}
           <input
             ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFileSelect}
+            accept="image/*,video/*,application/pdf"
+            className="hidden"
+          />
+
+          {/* フォルダ選択用input */}
+          <input
+            ref={folderInputRef}
             type="file"
             multiple
             onChange={handleFileSelect}
