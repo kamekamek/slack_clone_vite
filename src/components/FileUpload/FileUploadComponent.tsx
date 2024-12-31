@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FilePreview } from './FilePreview';
+import { FilePreview } from '../FileUpload/FilePreview';
 import { Upload, X, PlusCircle } from 'lucide-react';
 
 interface FileUploadProps {
