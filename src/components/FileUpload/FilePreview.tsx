@@ -2,11 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Image, Video, Music, Download, Eye } from 'lucide-react';
 
 interface FilePreviewProps {
-  file: File;
+  file: File | {
+    name: string;
+    type: string;
+    size?: number;
+    url?: string;
+  };
   onPreviewClick?: () => void;
 }
 
 export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }) => {
+  const isFileInstance = file instanceof File;
   const [preview, setPreview] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +23,17 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
 
     const generatePreview = async () => {
       try {
+        if (!isFileInstance && 'url' in file && file.url) {
+          setPreview(file.url);
+          setLoading(false);
+          return;
+        }
+
+        if (!isFileInstance) {
+          setLoading(false);
+          return;
+        }
+
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -48,11 +65,11 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
     generatePreview();
 
     return () => {
-      if (objectUrl) {
+      if (objectUrl && isFileInstance) {
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [file]);
+  }, [file, isFileInstance]);
 
   const getFileIcon = () => {
     if (file.type.startsWith('image/')) return <Image className="h-8 w-8 text-blue-500" />;
@@ -61,7 +78,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
     return <FileText className="h-8 w-8 text-gray-500" />;
   };
 
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = (bytes: number | undefined) => {
+    if (bytes === undefined) return '';
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -78,14 +96,23 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onPreviewClick }
   };
 
   const handleDownload = () => {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (isFileInstance) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if ('url' in file && file.url) {
+      const a = document.createElement('a');
+      a.href = file.url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   const handlePreviewClick = () => {
