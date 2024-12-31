@@ -1,17 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Smile } from 'lucide-react';
+import { Send, Smile, Paperclip } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
+import { FileUploadComponent } from './FileUpload/FileUploadComponent';
 
 interface MessageInputProps {
   onSendMessage: (text: string) => void;
+  onFileUpload: (files: File[]) => void;
   currentChannel: string;
 }
 
-export function MessageInput({ onSendMessage, currentChannel }: MessageInputProps) {
+export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,6 +51,16 @@ export function MessageInput({ onSendMessage, currentChannel }: MessageInputProp
     inputRef.current?.focus();
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      onFileUpload(files);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
       <div className="flex items-center space-x-2">
@@ -56,19 +70,39 @@ export function MessageInput({ onSendMessage, currentChannel }: MessageInputProp
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={`Message #${currentChannel} (Ctrl+Enter to send)`}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-24"
             rows={3}
           />
           
-          <button
-            ref={emojiButtonRef}
-            type="button"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-            title="Add emoji (Ctrl+E)"
-          >
-            <Smile className="w-5 h-5" />
-          </button>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              title="添付ファイル"
+            >
+              <Paperclip className="w-5 h-5" />
+            </button>
+            <button
+              ref={emojiButtonRef}
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              title="Add emoji (Ctrl+E)"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFileSelect}
+            accept="image/*,video/*,application/pdf"
+            className="hidden"
+          />
+
           {showEmojiPicker && (
             <EmojiPicker
               onEmojiSelect={handleEmojiSelect}
@@ -87,6 +121,16 @@ export function MessageInput({ onSendMessage, currentChannel }: MessageInputProp
           <Send className="w-5 h-5" />
         </button>
       </div>
+
+      {showFileUpload && (
+        <div className="mt-4">
+          <FileUploadComponent
+            onFileUpload={onFileUpload}
+            maxSize={10 * 1024 * 1024} // 10MB
+            acceptedTypes={['image/*', 'video/*', 'application/pdf']}
+          />
+        </div>
+      )}
     </form>
   );
 }
