@@ -54,7 +54,18 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      onFileUpload(files);
+      // ファイルの種類をフィルタリング
+      const validFiles = files.filter(file => {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        const isPDF = file.type === 'application/pdf';
+        return isImage || isVideo || isPDF;
+      });
+
+      if (validFiles.length > 0) {
+        onFileUpload(validFiles);
+      }
+      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -100,6 +111,7 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
             multiple
             onChange={handleFileSelect}
             accept="image/*,video/*,application/pdf"
+            {...{webkitdirectory: "", directory: ""} as any}
             className="hidden"
           />
 
