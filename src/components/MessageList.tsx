@@ -1,8 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FileUploadComponent } from './FileUpload/FileUploadComponent';
+import { FilePreview } from './FileUpload/FilePreview';
 
 interface MessageEdit {
   text: string;
   timestamp: Date;
+}
+
+interface MessageAttachment {
+  id: string;
+  type: 'image' | 'video' | 'file';
+  url: string;
+  name: string;
+  size: number;
 }
 
 interface Message {
@@ -21,6 +31,7 @@ interface Message {
   }>;
   canEdit?: boolean;
   canDelete?: boolean;
+  attachments?: MessageAttachment[];
 }
 
 interface MessageListProps {
@@ -32,6 +43,8 @@ interface MessageListProps {
   onTogglePin: (messageId: string) => void;
   onMention: (messageId: string, userId: string) => void;
   pinnedMessages: Message[];
+  onFileUpload: (messageId: string, files: File[]) => void;
+  onDeleteAttachment: (messageId: string, attachmentId: string) => void;
 }
 
 export function MessageList({
@@ -42,7 +55,9 @@ export function MessageList({
   onDeleteMessage,
   onTogglePin,
   onMention,
-  pinnedMessages = []
+  pinnedMessages = [],
+  onFileUpload,
+  onDeleteAttachment
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -177,9 +192,36 @@ export function MessageList({
                           保存
                         </button>
                       </div>
+                      <div className="mt-2">
+                        <FileUploadComponent
+                          onFileUpload={(files) => onFileUpload(message.id, files)}
+                          maxSize={10 * 1024 * 1024} // 10MB
+                          acceptedTypes={['image/*', 'video/*', 'application/pdf']}
+                        />
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-gray-900 whitespace-pre-wrap">{message.text}</p>
+                    <>
+                      <p className="text-gray-900 whitespace-pre-wrap">{message.text}</p>
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {message.attachments.map(attachment => (
+                            <div key={attachment.id} className="relative">
+                              <FilePreview file={new File([], attachment.name, { type: attachment.type })} />
+                              {message.canEdit && (
+                                <button
+                                  onClick={() => onDeleteAttachment(message.id, attachment.id)}
+                                  className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600"
+                                >
+                                  <span className="sr-only">削除</span>
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 {message.mentions && message.mentions.length > 0 && (
