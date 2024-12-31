@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Smile, Paperclip, X } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { FileUploadComponent } from './FileUpload/FileUploadComponent';
-import { MediaViewer } from '../Media/MediaViewer';
+import { MediaViewer } from './Media/MediaViewer';
 
 interface MessageInputProps {
   onSendMessage: (text: string, files?: File[]) => void;
