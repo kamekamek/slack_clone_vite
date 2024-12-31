@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Smile, Paperclip, X } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { FileUploadComponent } from './FileUpload/FileUploadComponent';
+import { MediaViewer } from '../Media/MediaViewer';
 
 interface MessageInputProps {
   onSendMessage: (text: string, files?: File[]) => void;
@@ -14,6 +15,7 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [selectedPreviewIndex, setSelectedPreviewIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,6 +89,10 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handlePreviewClick = (index: number) => {
+    setSelectedPreviewIndex(index);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
       {previewFiles.length > 0 && (
@@ -98,7 +104,8 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
                   <img
                     src={URL.createObjectURL(file)}
                     alt={file.name}
-                    className="h-20 w-20 object-cover rounded"
+                    className="h-20 w-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handlePreviewClick(index)}
                   />
                   <button
                     type="button"
@@ -183,6 +190,21 @@ export function MessageInput({ onSendMessage, onFileUpload, currentChannel }: Me
           <Send className="w-5 h-5" />
         </button>
       </div>
+
+      {selectedPreviewIndex !== null && (
+        <MediaViewer
+          file={previewFiles[selectedPreviewIndex]}
+          onClose={() => setSelectedPreviewIndex(null)}
+          onNext={() => setSelectedPreviewIndex(prev => 
+            prev !== null && prev < previewFiles.length - 1 ? prev + 1 : prev
+          )}
+          onPrevious={() => setSelectedPreviewIndex(prev => 
+            prev !== null && prev > 0 ? prev - 1 : prev
+          )}
+          hasNext={selectedPreviewIndex < previewFiles.length - 1}
+          hasPrevious={selectedPreviewIndex > 0}
+        />
+      )}
     </form>
   );
 }

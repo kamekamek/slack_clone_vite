@@ -1,130 +1,128 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MediaViewerProps {
-  files: { url: string; type: string }[];
-  initialIndex?: number;
+  file: File;
   onClose: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
-export const MediaViewer: React.FC<MediaViewerProps> = ({
-  files,
-  initialIndex = 0,
+export function MediaViewer({
+  file,
   onClose,
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [scale, setScale] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  onNext,
+  onPrevious,
+  hasNext = false,
+  hasPrevious = false,
+}: MediaViewerProps) {
+  const [url, setUrl] = useState<string>('');
+  const [zoom, setZoom] = useState(1);
 
-  const currentFile = files[currentIndex];
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'Escape':
-          onClose();
-          break;
-        case 'ArrowLeft':
-          setCurrentIndex((prev) => (prev > 0 ? prev - 1 : files.length - 1));
-          break;
-        case 'ArrowRight':
-          setCurrentIndex((prev) => (prev < files.length - 1 ? prev + 1 : 0));
-          break;
-        default:
-          break;
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'ArrowRight' && hasNext && onNext) {
+        onNext();
+      } else if (e.key === 'ArrowLeft' && hasPrevious && onPrevious) {
+        onPrevious();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [files.length, onClose]);
+  }, [onClose, onNext, onPrevious, hasNext, hasPrevious]);
 
-  const handleZoom = useCallback((direction: 'in' | 'out') => {
-    setScale((prev) => {
-      const newScale = direction === 'in' ? prev * 1.2 : prev / 1.2;
-      return Math.min(Math.max(0.5, newScale), 3);
-    });
-  }, []);
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 0.5, 3));
+  };
 
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  }, []);
-
-  const renderMedia = () => {
-    if (currentFile.type.startsWith('image/')) {
-      return (
-        <img
-          src={currentFile.url}
-          alt=""
-          className="max-h-full max-w-full object-contain transition-transform duration-200"
-          style={{ transform: `scale(${scale})` }}
-        />
-      );
-    }
-    if (currentFile.type.startsWith('video/')) {
-      return (
-        <video
-          src={currentFile.url}
-          controls
-          className="max-h-full max-w-full"
-          autoPlay
-        />
-      );
-    }
-    return null;
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 0.5, 0.5));
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-gray-300"
-      >
-        <X className="h-6 w-6" />
-      </button>
-
-      <div className="absolute top-4 left-4 space-x-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+      <div className="relative w-full h-full flex items-center justify-center">
+        {/* 閉じるボタン */}
         <button
-          onClick={() => handleZoom('in')}
-          className="text-white hover:text-gray-300"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
         >
-          <ZoomIn className="h-6 w-6" />
+          <X className="w-8 h-8" />
         </button>
-        <button
-          onClick={() => handleZoom('out')}
-          className="text-white hover:text-gray-300"
-        >
-          <ZoomOut className="h-6 w-6" />
-        </button>
-      </div>
 
-      {currentIndex > 0 && (
-        <button
-          onClick={() => setCurrentIndex(currentIndex - 1)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300"
-        >
-          <ChevronLeft className="h-8 w-8" />
-        </button>
-      )}
+        {/* ズームコントロール */}
+        <div className="absolute top-4 left-4 flex space-x-2">
+          <button
+            onClick={handleZoomOut}
+            className="text-white hover:text-gray-300 transition-colors"
+            disabled={zoom <= 0.5}
+          >
+            <ZoomOut className="w-6 h-6" />
+          </button>
+          <button
+            onClick={handleZoomIn}
+            className="text-white hover:text-gray-300 transition-colors"
+            disabled={zoom >= 3}
+          >
+            <ZoomIn className="w-6 h-6" />
+          </button>
+        </div>
 
-      {currentIndex < files.length - 1 && (
-        <button
-          onClick={() => setCurrentIndex(currentIndex + 1)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300"
-        >
-          <ChevronRight className="h-8 w-8" />
-        </button>
-      )}
+        {/* 前へボタン */}
+        {hasPrevious && onPrevious && (
+          <button
+            onClick={onPrevious}
+            className="absolute left-4 text-white hover:text-gray-300 transition-colors"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+        )}
 
-      <div className="w-full h-full flex items-center justify-center p-4">
-        {renderMedia()}
+        {/* メディアコンテンツ */}
+        <div className="max-w-[90vw] max-h-[90vh] overflow-auto">
+          {file.type.startsWith('image/') ? (
+            <img
+              src={url}
+              alt={file.name}
+              className="transition-transform duration-200"
+              style={{ transform: `scale(${zoom})` }}
+            />
+          ) : file.type.startsWith('video/') ? (
+            <video
+              src={url}
+              controls
+              autoPlay
+              className="max-w-full max-h-full"
+            />
+          ) : (
+            <div className="bg-white p-4 rounded">
+              <p>このファイル形式は表示できません</p>
+              <p className="text-sm text-gray-600">{file.name}</p>
+            </div>
+          )}
+        </div>
+
+        {/* 次へボタン */}
+        {hasNext && onNext && (
+          <button
+            onClick={onNext}
+            className="absolute right-4 text-white hover:text-gray-300 transition-colors"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+        )}
       </div>
     </div>
   );
-}; 
+} 
